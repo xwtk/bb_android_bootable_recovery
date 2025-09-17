@@ -387,9 +387,7 @@ static void run_graphics_test(RecoveryUI* ui) {
 
 static void WriteUpdateInProgress() {
   std::string err;
-  if (!update_bootloader_message({ "--reason=update_in_progress" }, &err)) {
-    LOG(ERROR) << "An error occurred during update: " << err;
-  }
+  update_bootloader_message({ "--reason=update_in_progress" }, &err);
 }
 
 static bool AskToReboot(Device* device, Device::BuiltinAction chosen_action) {
@@ -567,8 +565,8 @@ change_menu:
           update_in_progress = false;
         }
 
-        ui->Print("\nUpdate completed.\n");
         if (status == INSTALL_SUCCESS) {
+          ui->Print("\nUpdate completed.\n");
           update_in_progress = false;
           if (!ui->IsTextVisible()) {
             return Device::NO_ACTION;  // reboot if logs aren't visible
