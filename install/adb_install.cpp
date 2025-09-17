@@ -322,7 +322,7 @@ static void CreateMinadbdServiceAndExecuteCommands(
                               std::move(recovery_socket), std::ref(command_map));
 
   if (ui->IsTextVisible()) {
-    std::vector<std::string> headers{ rescue_mode ? "Rescue mode" : "ADB Sideload" };
+    std::vector<std::string> headers{ rescue_mode ? "Rescue mode" : "Update via ADB" };
     std::vector<std::string> entries{ "Cancel" };
     size_t chosen_item = ui->ShowMenu(
         headers, entries, 0, true,
@@ -380,8 +380,7 @@ InstallResult ApplyFromAdb(Device* device, bool rescue_mode, Device::BuiltinActi
 
   if (!rescue_mode) {
     ui->Print(
-        "\n\nNow send the package you want to apply\n"
-        "to the device with \"adb sideload <filename>\"...\n");
+        "\n\nReady to accept an update package.\n");
   } else {
     command_map.emplace(MinadbdCommand::kWipeData, [&device]() {
       bool result = WipeData(device, false);
