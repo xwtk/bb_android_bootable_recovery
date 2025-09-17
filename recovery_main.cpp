@@ -167,9 +167,7 @@ static std::vector<std::string> get_args(const int argc, char** const argv, std:
   // bootloader control block. So the device will always boot into recovery to
   // finish the pending work, until FinishRecovery() is called.
   std::vector<std::string> options(args.cbegin() + 1, args.cend());
-  if (!update_bootloader_message(options, &err)) {
-    LOG(ERROR) << "Failed to set BCB message: " << err;
-  }
+  update_bootloader_message(options, &err);
 
   // Finally, if no arguments were specified, check whether we should boot
   // into fastboot or rescue mode.
@@ -554,7 +552,7 @@ int main(int argc, char** argv) {
     }
     switch (ret) {
       case Device::SHUTDOWN:
-        ui->Print("Shutting down...\n");
+        ui->Print("Powering OFF\n");
         Shutdown("userrequested,recovery");
         break;
 
@@ -564,7 +562,7 @@ int main(int argc, char** argv) {
         break;
 
       case Device::REBOOT_BOOTLOADER:
-        ui->Print("Rebooting to bootloader...\n");
+        ui->Print("Entering Fastboot Mode\n");
         Reboot("bootloader");
         break;
 
@@ -574,7 +572,7 @@ int main(int argc, char** argv) {
         break;
 
       case Device::REBOOT_RECOVERY:
-        ui->Print("Rebooting to recovery...\n");
+        ui->Print("Restarting Recovery\n");
         Reboot("recovery");
         break;
 
@@ -599,29 +597,29 @@ int main(int argc, char** argv) {
           ui->Print("Partitions may be mounted - rebooting to enter fastboot.");
           Reboot("fastboot");
         } else {
-          LOG(INFO) << "Entering fastboot";
+          LOG(INFO) << "Entering Fastboot Mode";
           fastboot = true;
         }
         break;
 
       case Device::ENTER_RECOVERY:
-        LOG(INFO) << "Entering recovery";
+        LOG(INFO) << "Entering Recovery";
         fastboot = false;
         device->GoHome();
         break;
 
       case Device::REBOOT:
-        ui->Print("Rebooting...\n");
+        ui->Print("Restarting\n");
         Reboot("userrequested,recovery");
         break;
 
       case Device::REBOOT_FROM_FASTBOOT:
-        ui->Print("Rebooting...\n");
+        ui->Print("Restarting\n");
         Reboot("userrequested,fastboot");
         break;
 
       default:
-        ui->Print("Rebooting...\n");
+        ui->Print("Restarting\n");
         Reboot("unknown" + std::to_string(ret));
         break;
     }
