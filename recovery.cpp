@@ -525,7 +525,7 @@ change_menu:
       case Device::WIPE_CACHE: {
         save_current_log = true;
         std::function<bool()> confirm_func = [&device]() {
-          return yes_no(device, "Formatting cache may cause certain apps to load slower.", "  Confirm formatting cache partition?");
+          return yes_no(device, "Formatting cache may cause certain apps to load slower.", "Confirm formatting cache partition?");
         };
         WipeCache(ui, ui->IsTextVisible() ? confirm_func : nullptr);
         if (!ui->IsTextVisible()) return Device::NO_ACTION;
@@ -535,7 +535,7 @@ change_menu:
       case Device::WIPE_SYSTEM: {
         save_current_log = true;
         std::function<bool()> confirm_func = [&device]() {
-          return yes_no(device, "System partition contains your operating system.", "  Confirm formatting system partition?");
+          return yes_no(device, "System partition contains your operating system.", "Confirm formatting system partition?");
         };
         WipeSystem(ui, ui->IsTextVisible() ? confirm_func : nullptr);
         if (!ui->IsTextVisible()) return Device::NO_ACTION;
@@ -573,7 +573,7 @@ change_menu:
           }
         } else {
           ui->SetBackground(RecoveryUI::ERROR);
-          ui->Print("Update cancelled.\n");
+          if (status != INSTALL_NONE) ui->Print("Update cancelled.\n");
           copy_logs(save_current_log);
         }
         break;
