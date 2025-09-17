@@ -59,9 +59,7 @@ Device::BuiltinAction StartFastboot(Device* device, const std::vector<std::strin
   // set the 'command' field of BCB to 'boot-recovery' so the next boot is into recovery
   // to finish any interrupted tasks.
   std::string err;
-  if (!clear_bootloader_message(&err)) {
-    LOG(ERROR) << "Failed to clear BCB message: " << err;
-  }
+  clear_bootloader_message(&err);
 
   std::vector<std::string> fastboot_menu_items;
   std::transform(kFastbootMenuActions.cbegin(), kFastbootMenuActions.cend(),
