@@ -192,7 +192,7 @@ bool ask_to_continue_downgrade(Device* device) {
 }
 
 static bool ask_to_wipe_data(Device* device) {
-  std::vector<std::string> headers{ "Internal storage and personal information will be formatted.", "Confirm formatting data partition?" };
+  std::vector<std::string> headers{ "Internal storage and data will be formatted.", "Confirm formatting data partition?" };
   std::vector<std::string> items{ " No", " Yes" };
 
   size_t chosen_item = device->GetUI()->ShowMenu(
