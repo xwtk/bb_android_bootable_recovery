@@ -150,9 +150,7 @@ static void FinishRecovery(RecoveryUI* ui) {
 
   // Reset to normal system boot so recovery won't cycle indefinitely.
   std::string err;
-  if (!clear_bootloader_message(&err)) {
-    LOG(ERROR) << "Failed to clear BCB message: " << err;
-  }
+  clear_bootloader_message(&err);
 
   // Remove the command file, so recovery won't repeat indefinitely.
   if (HasCache()) {
@@ -180,7 +178,7 @@ bool ask_to_continue_unverified(Device* device) {
     return false;
   } else {
     device->GetUI()->SetProgressType(RecoveryUI::EMPTY);
-    return yes_no(device, "Signature verification failed", "Install anyway?");
+    return yes_no(device, "Update package is not signed", "Continue installation?");
   }
 }
 
@@ -194,8 +192,8 @@ bool ask_to_continue_downgrade(Device* device) {
 }
 
 static bool ask_to_wipe_data(Device* device) {
-  std::vector<std::string> headers{ "Format user data?", "This includes internal storage.", "THIS CANNOT BE UNDONE!" };
-  std::vector<std::string> items{ " Cancel", " Format data" };
+  std::vector<std::string> headers{ "Internal storage and personal information will be formatted.", "Confirm formatting data partition?" };
+  std::vector<std::string> items{ " No", " Yes" };
 
   size_t chosen_item = device->GetUI()->ShowMenu(
       headers, items, 0, true,
@@ -206,7 +204,7 @@ static bool ask_to_wipe_data(Device* device) {
 
 static InstallResult apply_update_menu(Device* device, Device::BuiltinAction* reboot_action){
   RecoveryUI* ui = device->GetUI();
-  std::vector<std::string> headers{ "Apply update" };
+  std::vector<std::string> headers{ "Update" };
   std::vector<std::string> items;
 
   const int item_sideload = 0;
@@ -216,14 +214,14 @@ static InstallResult apply_update_menu(Device* device, Device::BuiltinAction* re
 
   for (;;) {
     items.clear();
-    items.push_back("Apply from ADB");
+    items.push_back("Retrieve package via ADB");
     VolumeManager::Instance()->getVolumeInfo(volumes);
     for (auto vol = volumes.begin(); vol != volumes.end(); /* empty */) {
       if (!vol->mMountable) {
         vol = volumes.erase(vol);
         continue;
       }
-      items.push_back("Choose from " + vol->mLabel);
+      items.push_back("Select package from " + vol->mLabel);
       ++vol;
     }
 
@@ -253,15 +251,15 @@ static InstallResult apply_update_menu(Device* device, Device::BuiltinAction* re
 static InstallResult prompt_and_wipe_data(Device* device) {
   // Use a single string and let ScreenRecoveryUI handles the wrapping.
   std::vector<std::string> wipe_data_menu_headers{
-    "Can't load Android system. Your data may be corrupt. "
-    "If you continue to get this message, you may need to "
-    "perform a factory data reset and erase all user data "
-    "stored on this device.",
+    "Android could not be loaded, possibility of data corruption"
+    "If a restart does not help, a factory reset may be necessary."
+    "Factory reset will wipe your personal information and "
+    "files stored in the internal storage.",
   };
   // clang-format off
   std::vector<std::string> wipe_data_menu_items {
-    "Try again",
-    "Factory data reset",
+    "Restart",
+    "Factory Reset",
   };
   // clang-format on
   for (;;) {
@@ -390,7 +388,7 @@ static void run_graphics_test(RecoveryUI* ui) {
 static void WriteUpdateInProgress() {
   std::string err;
   if (!update_bootloader_message({ "--reason=update_in_progress" }, &err)) {
-    LOG(ERROR) << "Failed to WriteUpdateInProgress: " << err;
+    LOG(ERROR) << "An error occurred during update: " << err;
   }
 }
 
@@ -406,22 +404,20 @@ static bool AskToReboot(Device* device, Device::BuiltinAction chosen_action) {
   std::string item_text;
   switch (chosen_action) {
     case Device::REBOOT:
-      header_text = "reboot";
-      item_text = " Reboot system now";
+      header_text = "restart";
+      item_text = " Restart";
       break;
     case Device::SHUTDOWN:
       header_text = "power off";
-      item_text = " Power off";
+      item_text = " Power OFF";
       break;
     default:
-      LOG(FATAL) << "Invalid chosen action " << chosen_action;
+      LOG(FATAL) << "Invalid command";
       break;
   }
 
-  std::vector<std::string> headers{ "WARNING: Previous installation has failed.",
-                                    "  Your device may fail to boot if you " + header_text +
-                                        " now.",
-                                    "  Confirm reboot?" };
+  std::vector<std::string> headers{ "Update attempt has failed,",
+                                    "  device may not boot to system." };
   std::vector<std::string> items{ " Cancel", item_text };
 
   size_t chosen_item = device->GetUI()->ShowMenu(
@@ -531,7 +527,7 @@ change_menu:
       case Device::WIPE_CACHE: {
         save_current_log = true;
         std::function<bool()> confirm_func = [&device]() {
-          return yes_no(device, "Format cache?", "  THIS CAN NOT BE UNDONE!");
+          return yes_no(device, "Confirm formatting cache partition?");
         };
         WipeCache(ui, ui->IsTextVisible() ? confirm_func : nullptr);
         if (!ui->IsTextVisible()) return Device::NO_ACTION;
@@ -541,7 +537,7 @@ change_menu:
       case Device::WIPE_SYSTEM: {
         save_current_log = true;
         std::function<bool()> confirm_func = [&device]() {
-          return yes_no(device, "Format system?", "  THIS CAN NOT BE UNDONE!");
+          return yes_no(device, "System partition contains your operating system.", "  Confirm formatting system partition?");
         };
         WipeSystem(ui, ui->IsTextVisible() ? confirm_func : nullptr);
         if (!ui->IsTextVisible()) return Device::NO_ACTION;
@@ -571,7 +567,7 @@ change_menu:
           update_in_progress = false;
         }
 
-        ui->Print("\nInstall completed with status %d.\n", status);
+        ui->Print("\nUpdate completed.\n");
         if (status == INSTALL_SUCCESS) {
           update_in_progress = false;
           if (!ui->IsTextVisible()) {
@@ -579,7 +575,7 @@ change_menu:
           }
         } else {
           ui->SetBackground(RecoveryUI::ERROR);
-          ui->Print("Installation aborted.\n");
+          ui->Print("Update cancelled.\n");
           copy_logs(save_current_log);
         }
         break;
@@ -594,7 +590,7 @@ change_menu:
         android::base::SetProperty("ctl.restart", "adbd");
         device->RemoveMenuItemForAction(Device::ENABLE_ADB);
         device->GoHome();
-        ui->Print("Enabled ADB.\n");
+        ui->Print("ADB authorized.\n");
         break;
 
       case Device::RUN_GRAPHICS_TEST:
@@ -616,7 +612,7 @@ change_menu:
             break;
           }
           if (ensure_path_mounted_at(android::fs_mgr::GetSystemRoot(), "/mnt/system") != -1) {
-            ui->Print("Mounted /mnt/system.\n");
+            ui->Print("Mounted System partition to /mnt/system.\n");
             mounted = true;
           }
         } else {
@@ -825,8 +821,7 @@ Device::BuiltinAction start_recovery(Device* device, const std::vector<std::stri
   std::string ver_date = ver_date_match.str(1);  // Empty if no match.
 
   std::vector<std::string> title_lines = {
-    "Version " + android::base::GetProperty("ro.lineage.build.version", "(unknown)") +
-        " (" + ver_date + ")",
+    "Recovery Mode",
   };
   if (android::base::GetBoolProperty("ro.build.ab_update", false)) {
     std::string slot = android::base::GetProperty("ro.boot.slot_suffix", "");
@@ -897,7 +892,7 @@ Device::BuiltinAction start_recovery(Device* device, const std::vector<std::stri
         status = InstallWithFuseFromPath(update_package, ui);
       }
       if (status != INSTALL_SUCCESS) {
-        ui->Print("Installation aborted.\n");
+        ui->Print("Update cancelled.\n");
 
         // When I/O error or bspatch/imgpatch error happens, reboot and retry installation
         // RETRY_LIMIT times before we abandon this OTA update.
@@ -956,15 +951,15 @@ Device::BuiltinAction start_recovery(Device* device, const std::vector<std::stri
       ui->ShowText(true);
     }
     status = ApplyFromAdb(device, false /* rescue_mode */, &next_action);
-    ui->Print("\nInstall from ADB complete (status: %d).\n", status);
+    ui->Print("\nUpdate completed.\n");
     if (sideload_auto_reboot) {
       status = INSTALL_REBOOT;
-      ui->Print("Rebooting automatically.\n");
+      ui->Print("Restarting\n");
     }
   } else if (rescue) {
     save_current_log = true;
     status = ApplyFromAdb(device, true /* rescue_mode */, &next_action);
-    ui->Print("\nInstall from ADB complete (status: %d).\n", status);
+    ui->Print("\nUpdate completed.\n");
   } else if (!just_exit) {
     // Always show menu if no command is specified.
     // Note that this should be called before setting the background to avoid
