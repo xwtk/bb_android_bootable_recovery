@@ -178,7 +178,7 @@ bool ask_to_continue_unverified(Device* device) {
     return false;
   } else {
     device->GetUI()->SetProgressType(RecoveryUI::EMPTY);
-    return yes_no(device, "Update package is not signed", "Continue installation?");
+    return true;
   }
 }
 
@@ -525,7 +525,7 @@ change_menu:
       case Device::WIPE_CACHE: {
         save_current_log = true;
         std::function<bool()> confirm_func = [&device]() {
-          return yes_no(device, "Formatting cache may cause certain apps to load slower.", "Confirm formatting cache partition?");
+          return yes_no(device, "This may cause certain apps to load slower.", "Confirm formatting cache partition?");
         };
         WipeCache(ui, ui->IsTextVisible() ? confirm_func : nullptr);
         if (!ui->IsTextVisible()) return Device::NO_ACTION;
