@@ -698,7 +698,6 @@ bool SetupPackageMount(const std::string& package_path, bool* should_use_fuse) {
       return false;
     }
     // uncrypt only produces block map only if the package stays on /data.
-    *should_use_fuse = false;
     return true;
   }
 
